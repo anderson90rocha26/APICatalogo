@@ -2,10 +2,11 @@
 using APICatalogo.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace APICatalogo.Controllers
 {
-    [Route("[controller]")]
+    [Route("[controller]")] // /produtos
     [ApiController]
     public class ProdutosController : ControllerBase
     {
@@ -16,10 +17,23 @@ namespace APICatalogo.Controllers
             _context = context;
         }
 
+        // /produtos/primeiro
+        [HttpGet("primeiro")]
+        public ActionResult<Produto> GetPimeiro()
+        {
+            var produto = _context.Produtos.FirstOrDefault();
+            if (produto is null)
+            {
+                return NotFound();
+            }
+            return produto;
+        }
+
+        // /produtos
         [HttpGet]
         public ActionResult<IEnumerable<Produto>> Get() 
         {
-            var produtos = _context.Produtos.ToList();
+            var produtos = _context.Produtos.AsNoTracking().ToList();
             if(produtos is null)
             {
                 return NotFound("Produtos não encontrados");
@@ -28,6 +42,7 @@ namespace APICatalogo.Controllers
         }
 
         //A ação do resultado é usado para suporta o retorno do produto ou o erro
+        // /produtos/id
         [HttpGet("{id:int}", Name ="ObterProduto")]
         public ActionResult<Produto> Get(int id)
         {
@@ -40,6 +55,8 @@ namespace APICatalogo.Controllers
         }
 
         //A ação do resultado só está indicanto que vai retornar somente as mensagens de status http
+
+        // /produtos
         [HttpPost]
         public ActionResult Post(Produto produto)
         {
