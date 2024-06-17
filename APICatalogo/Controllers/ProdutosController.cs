@@ -29,7 +29,7 @@ namespace APICatalogo.Controllers
             return produto;
         }
 
-        // /produtos
+        // api/produtos
         [HttpGet]
         public ActionResult<IEnumerable<Produto>> Get() 
         {
