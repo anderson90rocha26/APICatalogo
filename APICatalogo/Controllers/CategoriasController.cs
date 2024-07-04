@@ -21,6 +21,7 @@ public class CategoriasController : ControllerBase
     private readonly AppDbContext _context; 
     private readonly IConfiguration _configuration;
 
+
     public CategoriasController(AppDbContext context, IConfiguration configuration)
     {
         _context = context;
@@ -74,7 +75,7 @@ public class CategoriasController : ControllerBase
     public ActionResult<CategoriaDTO> Get(int id)
     {
 
-         //throw new Exception("Exceção ao rtornar o produto pelo Id");
+         throw new Exception("Exceção ao rtornar o produto pelo Id");
 
         var categoria = _context.Categorias.FirstOrDefault(p => p.CategoriaId == id);
         if (categoria == null)
