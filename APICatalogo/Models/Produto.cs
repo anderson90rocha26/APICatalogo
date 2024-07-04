@@ -33,7 +33,7 @@ public class Produto : IValidatableObject
     public int CategoriaId { get; set; }
 
     [JsonIgnore]
-    public Categoria? Categoria { get; set; }
+    public CategoriaDTO? Categoria { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

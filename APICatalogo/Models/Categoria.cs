@@ -5,9 +5,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace APICatalogo.Models;
 
 [Table("Categorias")]
-public class Categoria
+public class CategoriaDTO
 {
-    public Categoria()
+    public CategoriaDTO()
     {
         Produtos = new Collection<Produto>();
     }

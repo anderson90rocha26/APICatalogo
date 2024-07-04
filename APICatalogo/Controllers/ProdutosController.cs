@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace APICatalogo.Controllers
 {
-    [Route("[controller]")] // /produtos
+    [Route("api/[controller]")] // /produtos
     [ApiController]
     public class ProdutosController : ControllerBase
     {
@@ -17,7 +17,7 @@ namespace APICatalogo.Controllers
             _context = context;
         }
 
-        // /produtos/primeiro
+        // api/produtos/primeiros
         [HttpGet("primeiro")]
         public ActionResult<Produto> GetPimeiro()
         {
@@ -31,25 +31,23 @@ namespace APICatalogo.Controllers
 
         // api/produtos
         [HttpGet]
-        public ActionResult<IEnumerable<Produto>> Get() 
+        public async Task<ActionResult<IEnumerable<Produto>>> Get2() 
         {
-            var produtos = _context.Produtos.AsNoTracking().ToList();
-            if(produtos is null)
-            {
-                return NotFound("Produtos não encontrados");
-            }
-            return produtos;
+            return await _context.Produtos.AsNoTracking().ToListAsync();
         }
 
-        //A ação do resultado é usado para suporta o retorno do produto ou o erro
-        // /produtos/id
+        // A ação do resultado é usado para suporta o retorno do produto ou o erro
+
+        // api/produtos/1
         [HttpGet("{id:int}", Name ="ObterProduto")]
-        public ActionResult<Produto> Get(int id)
+        public async Task<ActionResult<Produto>> Get(int id)
         {
-            var produto = _context.Produtos.FirstOrDefault(p => p.ProdutoId == id);
-            if(produto is null)
+            var produto = await _context.Produtos.AsNoTracking()
+                .FirstOrDefaultAsync(p => p.ProdutoId ==  id);
+
+            if(produto == null)
             {
-                return NotFound("Produto não encontrado");
+                return NotFound();
             }
             return produto;
         }
