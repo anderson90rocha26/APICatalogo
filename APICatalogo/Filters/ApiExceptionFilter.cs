@@ -3,18 +3,13 @@ using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace APICatalogo.Filters
 {
-    public class Api_ExceptionFilter : IExceptionFilter
+    public class ApiExceptionFilter : IExceptionFilter
     {
-        private readonly ILogger<Api_ExceptionFilter> _logger;
+        private readonly ILogger<ApiExceptionFilter> _logger;
 
-        public Api_ExceptionFilter(ILogger<Api_ExceptionFilter> logger)
+        public ApiExceptionFilter(ILogger<ApiExceptionFilter> logger)
         {
             _logger = logger;
-        }
-
-        public Api_ExceptionFilter()
-        {
-            
         }
         public void OnException(ExceptionContext context)
         {

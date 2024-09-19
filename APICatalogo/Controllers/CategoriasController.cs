@@ -1,132 +1,115 @@
-﻿
-using APICatalogo.Context;
-using APICatalogo.Filters;
-using APICatalogo.Models;
-using APICatalogo.Services;
-using Microsoft.AspNetCore.Authorization;
+﻿using APICatalogo.DTO;
+using APICatalogo.DTO.Mappings;
+using APICatalogo.Repositories;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
+
 
 namespace APICatalogo.Controllers;
 
-
-//[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-[Produces("application/json")]
-[Route("api/[controller]")]
+[Route("/[controller]")]
 [ApiController]
 public class CategoriasController : ControllerBase
 {
-    private readonly AppDbContext _context; 
-    private readonly IConfiguration _configuration;
+    private readonly IUnitOfWork _uof;
+    private readonly ILogger<CategoriasController> _logger;
 
-
-    public CategoriasController(AppDbContext context, IConfiguration configuration)
+    public CategoriasController(ILogger<CategoriasController> logger, IUnitOfWork uof)
     {
-        _context = context;
-        _configuration = configuration;
+        _logger = logger;
+        _uof = uof;
     }
 
-    [HttpGet("LerArquivoConfiguracao")]
+    [HttpGet]
 
-    public string GetValores() 
+    public ActionResult<IEnumerable<CategoriaDTO>> Get()
+
     {
-        var valor1 = _configuration ["chave1"];
-        var valor2 = _configuration ["chave2"];
+        var categorias = _uof.CategoriaRepository.GetAll();
 
-        var secao1 = _configuration ["secao1:chave2"];
+        if (categorias is null)
+            return NotFound("Não existem categoria...");
 
-          return $"Chave1 = {valor1} \nChave2 = {valor2} \nSeção1 => Chave2 = {secao1}";
-    }
+        var categoriasDto = categorias.ToList();
 
-
-    // Nunca retorne objetos rellcionados sem aplicar um filtro como está no codigo comentado, o correto é antes do ToList usar exemplo .Where(c=> c.CategriaId<=5), pq dependendo da entidade sobrecarega a aplicação
-
-    [HttpGet("produtos")]
-
-    public ActionResult<IEnumerable<CategoriaDTO>> GetCategoriasProdutos()
-    {
-        //return _context.Categorias.Include(p=> p.Produtos).ToList();
-        return _context.Categorias.Include(p=> p.Produtos).Where(c=> c.CategoriaId <= 5).ToList();
+        return Ok(categoriasDto);
     }
 
     // A função AsNoTracking é usada em consulta somente leitura, não fica rastreada e melhora o desenpenho, o dado só não pode ser alterado
     // Nunca retorne todos os registros em uma consulta como no exemplo, use o "Tak(10)" antes do "ToList"
-    
-
-
-    [HttpGet]
-    [ServiceFilter(typeof(ApiLoggingFilter))]
-    public async Task<ActionResult<IEnumerable<CategoriaDTO>>> Get()
-    {
-        try
-        {
-            return await _context.Categorias.AsNoTracking().ToListAsync();
-        }
-        catch (Exception)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, "Ocorreu um problema ao tratar a sua solicitação.");
-        }
-    }
-  
     //A ação do resultado é usado para suporta o retorno do produto ou o erro
+
     [HttpGet("{id:int}", Name = "ObterCategoria")]
     public ActionResult<CategoriaDTO> Get(int id)
     {
+        var categoria = _uof.CategoriaRepository.Get(c=> c.CategoriaId == id);
 
-         throw new Exception("Exceção ao rtornar o produto pelo Id");
-
-        var categoria = _context.Categorias.FirstOrDefault(p => p.CategoriaId == id);
-        if (categoria == null)
+        if (categoria is null)
         {
-            return NotFound("Categoria não encontrada...");
+            _logger.LogWarning($"Categoria com id = {id} não encontrada...");
+            return NotFound($"Categoria com id= {id} não encontrada...");
         }
+
+        var categoriaDto = categoria.ToCategoriaDTO();
+
         return Ok(categoria);
     }
 
     //A ação do resultado só está indicanto que vai retornar somente as mensagens de status http
     [HttpPost]
-    public ActionResult Post(CategoriaDTO categoria)
+    public ActionResult<CategoriaDTO> Post(CategoriaDTO categoriaDto)
     {
-        if (categoria is null)
-        
-            return BadRequest();
-        
-        _context.Categorias.Add(categoria);
-        _context.SaveChanges();
+        if (categoriaDto is null)
+        {
+            _logger.LogWarning($"Dados inválidos....");
+            return BadRequest("Dados inválidos");
+        }
 
-        return new CreatedAtRouteResult("ObterCategoria", new { id = categoria.CategoriaId }, categoria);
+        var categoria = categoriaDto.ToCategoria();
+        
+        var categoriaCriada = _uof.CategoriaRepository.Create(categoria);
+        _uof.Commit();
+
+        var novaCategoriaDto = categoriaCriada.ToCategoriaDTO();
+
+        return new CreatedAtRouteResult("ObterCategoria", new { id = novaCategoriaDto.CategoriaId }, novaCategoriaDto);
 
     }
 
     [HttpPut("{id:int}")]
-    public ActionResult Put(int id, CategoriaDTO categoria)
+    public ActionResult<CategoriaDTO> Put(int id, CategoriaDTO categoriaDto)
     {
-        if (id != categoria.CategoriaId)
+        if (id != categoriaDto.CategoriaId)
         {
-            return BadRequest();
+            _logger.LogWarning($"Dados inválidos...");
+            return BadRequest("Dados inválidos");
         }
 
-        _context.Entry(categoria).State = EntityState.Modified;
-        _context.SaveChanges();
+        var categoria = categoriaDto.ToCategoria();
 
-        return Ok(categoria);
+        var categoriaAtualizada = _uof.CategoriaRepository.Update(categoria);
+        _uof.Commit();
+
+        var categoriaAtualizadaDto = categoriaAtualizada.ToCategoriaDTO();
+
+        return Ok(categoriaAtualizadaDto);
 
     }
 
     [HttpDelete("{id:int}")]
     public ActionResult<CategoriaDTO> Delete(int id)
     {
-        var categoria = _context.Categorias.FirstOrDefault(p => p.CategoriaId == id);
+        var categoria = _uof.CategoriaRepository.Get(c=> c.CategoriaId == id);
 
-        if (categoria is null)
+        if (categoria == null)
         {
-            return NotFound("Categoria não encontrada");
+            _logger.LogWarning($"Categoria com id={id} não encontrada...");
+            return NotFound($"Categoria com id={id } não encontrada...");
         }
-        _context.Categorias.Remove(categoria);
-        _context.SaveChanges();
+        var categoriaExcluida = _uof.CategoriaRepository.Delete(categoria);
+        _uof.Commit();
 
-        return Ok(categoria);
+        var catgoiaExcluidaDto = categoriaExcluida.ToCategoriaDTO();
+
+        return Ok(catgoiaExcluidaDto);
     }
 }
